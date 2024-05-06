@@ -31,7 +31,7 @@ class SAR_Indexer:
     SHOW_MAX = 10
 
     all_atribs = ['urls', 'index', 'sindex', 'ptindex', 'docs', 'weight', 'articles',
-                  'tokenizer', 'stemmer', 'show_all', 'use_stemming']
+                'tokenizer', 'stemmer', 'show_all', 'use_stemming']
 
     def __init__(self):
         """
@@ -55,6 +55,8 @@ class SAR_Indexer:
         self.show_snippet = False # valor por defecto, se cambia con self.set_snippet()
         self.use_stemming = False # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
+        
+        self.max_art_doc = 0 # maximo numero de articulos en un documento
 
 
     ###############################
@@ -168,7 +170,8 @@ class SAR_Indexer:
         """
         self.multifield = args['multifield']
         self.positional = args['positional']
-        self.stemming = args['stem']
+        # self.stemming = args['stem']
+        self.set_stemming(args['stem'])
         self.permuterm = args['permuterm']
 
         file_or_dir = Path(root)
@@ -177,24 +180,24 @@ class SAR_Indexer:
             # is a file
             if self.docs is None:
                 self.docs = {}
-            self.docs[file_or_dir] = []
+            self.docs[file_or_dir] = root
             self.index_file(file_or_dir)
         elif file_or_dir.is_dir():
             # is a directory
             for d, _, files in os.walk(root):
-                for filename in files:
+                for filename in sorted(files):
                     if filename.endswith('.json'):
                         fullname = os.path.join(d, filename)
                         if self.docs is None:
                             self.docs = {}
-                        self.docs[fullname] = []
+                        self.docs[fullname] = root
                         self.index_file(fullname)
         else:
             print(f"ERROR:{root} is not a file nor directory!", file=sys.stderr)
             sys.exit(-1)
 
         # Llamada a make_stemming si la opción de stemming está activa
-        if self.stemming:
+        if self.use_stemming:
             self.make_stemming()
 
         # Llamada a make_permuterm si la opción de permuterm está activa
@@ -245,8 +248,10 @@ class SAR_Indexer:
 
 
         """
+        max_v=0
         for i,line in enumerate(open(filename)):
             j = self.parse_article(line)
+            max_v+=1
 
             # para no indexar dos con la misma url(lo habiamos gestionado el el crawler)
             if self.already_in_index(j):
@@ -277,6 +282,8 @@ class SAR_Indexer:
                         self.index[field][token] = [] #inicializamos su list si no lo estaba para ese token en ese field
                     self.index[field][token].append(art_id) # como ya nos hemos asegurado appendeamos
             
+        
+        self.max_art_doc = max(max_v, self.max_art_doc)    
             
         #
         # 
@@ -332,14 +339,23 @@ class SAR_Indexer:
 
         """
         
-        for term in self.index.keys():
-            # obtenemos el stem del término
-            stem = self.stemmer.stem(term)
-            # si el stem no esta en el índice de stemming, lo añade
-            if stem not in self.sindex:
-                self.sindex[stem] = []
-            # añade el término al stem correspondiente
-            self.sindex[stem].append(term)
+        # Asegurarse de que self.sindex está inicializado para cada campo
+        for field in self.index.keys():
+            if field not in self.sindex:
+                self.sindex[field] = {}
+
+        # Procesar cada campo en el índice
+        for field, terms in self.index.items():
+            for term in terms.keys():
+                # Obtenemos el stem del término
+                stem = self.stemmer.stem(term)
+                
+                # Si el stem no está en el índice de stemming, lo añade
+                if stem not in self.sindex[field]:
+                    self.sindex[field][stem] = []
+                
+                # Añade el término al stem correspondiente
+                self.sindex[field][stem].append(term)
 
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
@@ -356,20 +372,37 @@ class SAR_Indexer:
 
 
         """
-        for term in self.index.keys():
-            # añade el símbolo de fin de cadena y crea permutaciones del término
-            rotated_term = term + '$'
-            # haremos tantas como letras tenga
-            for i in range(len(rotated_term)):
-                permuterm = rotated_term[i:] + rotated_term[:i]
-                # guardamos la permutacion con referencia al termino original
-                self.ptindex[permuterm] = term  
+        
+        # Asumiendo que self.index es un diccionario de diccionarios, donde el primer nivel de claves son los campos
+        # y el segundo nivel son los términos con sus respectivas posting lists
+        for field, terms in self.index.items():
+            if field not in self.ptindex:
+                self.ptindex[field] = {}  # Inicializa un diccionario para el campo si no existe
+            for term in terms.keys():
+                # Añade el símbolo de fin de cadena y crea permutaciones del término
+                rotated_term = term + '$'
+                # Creamos todas las permutaciones posibles del término
+                for i in range(len(rotated_term)):
+                    permuterm = rotated_term[i:] + rotated_term[:i]
+                    # Guardamos la permutacion con referencia al término original
+                    self.ptindex[field][permuterm] = term
+        
+        
+        
+        # print("Self.index", self.index)
+        
+        # for term in self.index:
+        #     print(term)
+        #     # añade el símbolo de fin de cadena y crea permutaciones del término
+        #     rotated_term = term + '$'
+        #     # haremos tantas como letras tenga
+        #     for i in range(len(rotated_term)):
+        #         permuterm = rotated_term[i:] + rotated_term[:i]
+        #         # guardamos la permutacion con referencia al termino original
+        #         self.ptindex[permuterm] = term  
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
-
-
-
 
     def show_stats(self):
         """
@@ -378,10 +411,8 @@ class SAR_Indexer:
         Muestra estadisticas de los indices
         
         """
+        #italic in python
         
-        
-        print("-" * 40)
-        print("Estadísticas de los índices:")
         print("="*40)
         print(f"Number of indexed files: {len(self.docs)}")
         print("-" * 40)
@@ -396,68 +427,66 @@ class SAR_Indexer:
                 print(f"\t# of tokens in '{field}': {len(self.index[field])}")
         else:
             print(f"\t# of tokens in 'all': {len(self.index['all'])}")
-            
         print("-" * 40)
         # print(self.ptindex)
-        # if self.permuterm: 
-        #     print("PERMUTERMS:")
+        if self.permuterm: 
+            print("PERMUTERMS:")
             
-        #     if self.multifield:
-        #         fields_to_index = ['all', 'title', 'summary', 'section-name', 'url']
-        #         for field in fields_to_index:
-        #             print(f"\t# of permuterms in '{field}': {len(self.ptindex[field])}")
-        #     else:
-        #         print(f"\t# of permuterms in 'all': {len(self.ptindex['all'])}")
-        #     print("-" * 40)
+            if self.multifield:
+                fields_to_index = ['all', 'title', 'summary', 'section-name', 'url']
+                for field in fields_to_index:
+                    print(f"\t# of permuterms in '{field}': {len(self.ptindex[field])}")
+            else:
+                print(f"\t# of permuterms in 'all': {len(self.ptindex['all'])}")
+            print("-" * 40)
             
-        # if self.use_stemming:
-        #     print("STEMS:")
+        if self.use_stemming:
+            print("STEMS:")
             
-        #     if self.multifield:
-        #         fields_to_index = ['all', 'title', 'summary', 'section-name', 'url']
-        #         for field in fields_to_index:
-        #             print(f"\t# of stems in '{field}': {len(self.sindex[field])}")
-        #     else:
-        #         print(f"\t# of stems in 'all': {len(self.sindex['all'])}")
-        #     print("-" * 40)
+            if self.multifield:
+                fields_to_index = ['all', 'title', 'summary', 'section-name', 'url']
+                for field in fields_to_index:
+                    print(f"\t# of stems in '{field}': {len(self.sindex[field])}")
+            else:
+                print(f"\t# of stems in 'all': {len(self.sindex['all'])}")
+            print("-" * 40)
         # opciones en genral activadas
-        print("Opciones activadas:")
-        print(f"Stemming está {'activado' if self.use_stemming else 'desactivado'}.")
-        print(f"Multifield está {'activado' if self.multifield else 'desactivado'}.")
-        print(f"Permuterm está {'activado' if self.permuterm else 'desactivado'}.")
-        print(f"Ranking de resultados está {'activado' if self.use_ranking else 'desactivado'}.")
+        # print("Opciones activadas:")
+        # print(f"Stemming está {'activado' if self.use_stemming else 'desactivado'}.")
+        # print(f"Multifield está {'activado' if self.multifield else 'desactivado'}.")
+        # print(f"Permuterm está {'activado' if self.permuterm else 'desactivado'}.")
+        # print(f"Ranking de resultados está {'activado' if self.use_ranking else 'desactivado'}.")
         
-        # num tot de documentos
-        print(f"Número de documentos indexados: {len(self.docs)}")
+        # # num tot de documentos
+        # print(f"Número de documentos indexados: {len(self.docs)}")
 
-        # indice general de terminos
-        num_terms = len(self.index)
-        print(f"Número de términos únicos en el índice invertido: {num_terms}")
+        # # indice general de terminos
+        # num_terms = len(self.index)
+        # print(f"Número de términos únicos en el índice invertido: {num_terms}")
     
-        # dicc del steaming
-        if self.sindex:
-            num_stems = len(self.sindex)
-            print(f"Número de stems únicos en el índice de stemming: {num_stems}")
-        else:
-            print("Índice de stemming no utilizado o vacío.")
+        # # dicc del steaming
+        # if self.sindex:
+        #     num_stems = len(self.sindex)
+        #     print(f"Número de stems únicos en el índice de stemming: {num_stems}")
+        # else:
+        #     print("Índice de stemming no utilizado o vacío.")
 
-        # dicc del permuterm
-        if self.ptindex:
-            num_permuterms = len(self.ptindex)
-            print(f"Número de permuterms únicos en el índice de permuterm: {num_permuterms}")
-        else:
-            print("Índice de permuterm no utilizado o vacío.")
+        # # dicc del permuterm
+        # if self.ptindex:
+        #     num_permuterms = len(self.ptindex)
+        #     print(f"Número de permuterms únicos en el índice de permuterm: {num_permuterms}")
+        # else:
+        #     print("Índice de permuterm no utilizado o vacío.")
 
-        # numero total de url
-        print(f"Número de URLs únicas procesadas: {len(self.urls)}")
+        # # numero total de url
+        # print(f"Número de URLs únicas procesadas: {len(self.urls)}")
 
-        print("-" * 40)
+        # print("-" * 40)
+        
+        
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
-
-
-
 
     #################################
     ###                           ###
@@ -497,8 +526,23 @@ class SAR_Indexer:
         ########################################
                     
         # vamos a detectar con la ayuda de esta expresion regular cada uno de estos operadores. es la fdorma mas segura de hacerlo
-        pattern = r'"[^"]*"|\b(AND|OR|NOT)\b|\w+:?\w*'
+        # Regex para identificar si hay un campo especificado al inicio de la consulta 
+        # Identificar si hay un campo especificado al inicio de la consulta
+        field_pattern = r'^(?P<field>\w+):'
+        match = re.match(field_pattern, query)
+        if match:
+            field = match.group('field')
+            query = query[len(field) + 1:].strip()  # Elimina el prefijo del campo
+            self.multifield = True  # Activa la opción de índices múltiples
+        else:
+            field = 'all'  # Campo por defecto si no se especifica
+            self.multifield = False  # Desactiva la opción de índices múltiples
+        
+        # vamos a detectar con la ayuda de esta expresion regular cada uno de estos operadores. es la fdorma mas segura de hacerlo
+        pattern = r'\b(?:[A-Z][a-z]*|\w+)\b'
+
         tokens = re.findall(pattern, query, re.IGNORECASE)
+        print(f"Tokens: {tokens}")
 
         #nos quedamos con las posting list de todos los terminos de paso
         stack = []
@@ -510,20 +554,27 @@ class SAR_Indexer:
         for token in tokens:
             if token in ('AND', 'OR', 'NOT'):
                 stackop.append(token)
+                print(f"Stackop: {stackop}")
             else:
                 stackterm.append(token.lower())
-
+                print(f"Stackterm: {stackterm}")
                 current_posting = self.get_posting(token, field)
                 stack.append(current_posting)
+            print(f"Stack: {stack}")
+
+
 
         # pila resautlados
         result_stack = []
         current_posting = stack.pop()
         second_term = stack.pop()
-         
+        
+        print(f"Current Posting: {current_posting}")
+        print(f"Second Term: {second_term}")
 
-        while stack:
+        while stackop:
             operator = stackop.pop()
+            print(f"Operator: {operator}")
             if operator == 'AND':
                 current_posting = self.and_posting(second_term, current_posting)
                 second_term = result_stack.pop()
@@ -536,10 +587,7 @@ class SAR_Indexer:
             result_stack.append(current_posting)
 
         return result_stack[-1] if result_stack else []
-
-
-
-
+        # return []
 
     def get_posting(self, term: str, field: Optional[str] = None):
         """
@@ -557,25 +605,19 @@ class SAR_Indexer:
         """
         # Si el término contiene un comodín, usa el índice de permuterm
         if '*' in term or '?' in term:
-            return self.get_permuterm(term)
+            return self.get_permuterm(term, field)
 
         # Si el stemming está activo, recupera la posting list usando el índice de stemming
         if self.use_stemming:
             return self.get_stemming(term, field)
 
         # Si hay un campo específico y se utilizan índices múltiples
-        if field and self.multifield:
-            if term in self.index[field]:
+        if field:
+            if field in self.index and term in self.index[field]:
                 return self.index[field][term]
-
-        # Devuelve la posting list desde el índice principal
-        if term in self.index:
-            return self.index[term]
-
+        
         # Si no se encuentra el término, devuelve una lista vacía
         return []
-
-
 
     def get_positionals(self, terms:str, index):
         """
@@ -594,7 +636,6 @@ class SAR_Indexer:
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE POSICIONALES ##
         ########################################################
 
-
     def get_stemming(self, term:str, field: Optional[str]=None):
         """
 
@@ -607,27 +648,28 @@ class SAR_Indexer:
         return: posting list
 
         """
-        
         stem = self.stemmer.stem(term)
+        posting_list = []
 
-        # si se utiliza la ampliación de múltiples índices y se especifica un campo,
-        # se busca el stem en el índice de stems de ese campo.
-        # de lo contrario, se busca en el índice de stems general.
-        if field and self.multifield and (field in self.sindex):
-            posting_list = []
-            for term in self.sindex[field]:
-                if stem == self.stemmer.stem(term):
-                    posting_list.extend(self.index[field][term])
-            return posting_list
+        # Si se especifica un campo y se utilizan índices múltiples
+        if field and self.multifield:
+            # Busca en el índice de stems del campo especificado
+            if field in self.sindex and stem in self.sindex[field]:
+                for term in self.sindex[field][stem]:
+                    if term in self.index[field]:
+                        posting_list.extend(self.index[field][term])
         else:
-            # Devuelve la posting list general para el stem del término
-            return [self.index[term] for term in self.sindex.get(stem, []) if term in self.index]
+            # Si no se especifica campo, busca en todos los campos del índice de stems
+            for fld in self.sindex:
+                if stem in self.sindex[fld]:
+                    for term in self.sindex[fld][stem]:
+                        if term in self.index[fld]:
+                            posting_list.extend(self.index[fld][term])
 
+        return list(set(posting_list))  # Convertir a lista y eliminar duplicados
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
- 
-    
 
     def get_permuterm(self, term:str, field:Optional[str]=None):
         """
@@ -641,33 +683,42 @@ class SAR_Indexer:
         return: posting list
 
         """
-        # en funcion del comodin, pero seguimos el patron de bnusqueda estandar(con este al final)
+        # Determinar el patrón de búsqueda basado en el comodín presente
         if '*' in term:
             split_term = term.split('*')
+            # Coloca el comodín al final del término
             permuterm_term = split_term[1] + split_term[0] + '$'
         elif '?' in term:
             split_term = term.split('?')
+            # Coloca el comodín al final del término
             permuterm_term = split_term[1] + split_term[0] + '$'
 
         matching_terms = []
-        #se queda con la tupla para que si empieza como quiere poder guardarlo
-        for permuterm, term in self.ptindex.items():
-            if permuterm.startswith(permuterm_term):
-                matching_terms.append(self.index[term])
 
-        # para que no hayan incidencias repetidas  y como tenemos varias listas con los termid pasarlo todo a 1:
+        # Buscar en el índice permuterm correspondiente al campo especificado
+        if field and field in self.ptindex:
+            for permuterm, term in self.ptindex[field].items():
+                if permuterm.startswith(permuterm_term):
+                    matching_terms.append(term)
+        elif field is None:
+            # Si no se especifica campo, buscar en todos los campos
+            for field_pt in self.ptindex.values():
+                for permuterm, term in field_pt.items():
+                    if permuterm.startswith(permuterm_term):
+                        matching_terms.append(term)
+        else:
+            return []  # Si el campo no existe en el índice, devolver lista vacía
+
+        # Consolidar las posting lists de todos los términos encontrados
         posting_list = set()
-        for sublist in matching_terms:
-            for post in sublist:
-                posting_list.add(post)
+        for term in matching_terms:
+            if term in self.index[field]:
+                posting_list.update(self.index[field][term])
 
         return list(posting_list)
         ##################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA PERMUTERM ##
         ##################################################
-        
-
-
 
     def reverse_posting(self, p:list):
         """
@@ -692,8 +743,6 @@ class SAR_Indexer:
         p_set = set(p)  # pasamos a una lista
         result = list(all_art_ids - p_set)  # al ser dos conjuntos obtenemos la diferencia
         return result
-
-
 
     def and_posting(self, p1:list, p2:list):
         """
@@ -725,8 +774,6 @@ class SAR_Indexer:
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
-
-
 
     def or_posting(self, p1:list, p2:list):
         """
@@ -766,7 +813,6 @@ class SAR_Indexer:
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
 
-
     def minus_posting(self, p1, p2):
         """
         OPCIONAL PARA TODAS LAS VERSIONES
@@ -786,9 +832,6 @@ class SAR_Indexer:
         ########################################################
         ## COMPLETAR PARA TODAS LAS VERSIONES SI ES NECESARIO ##
         ########################################################
-
-
-
 
 
     #####################################
@@ -811,7 +854,6 @@ class SAR_Indexer:
                     print(query)
         return results
 
-
     def solve_and_test(self, ql:List[str]) -> bool:
         errors = False
         for line in ql:
@@ -827,7 +869,6 @@ class SAR_Indexer:
             else:
                 print(query)
         return not errors
-
 
     def solve_and_show(self, query:str):
         """
@@ -848,27 +889,38 @@ class SAR_Indexer:
         num_results = len(results)
         
         # Muestra el número total de resultados si no es la opción -T, sino solo cuenta los resultados
-        print(f"Query: '{query}'\nResults found: {num_results}")
+        print(f"Query: '{query}'\nNumber of results: {num_results}")
         
         # Decide si mostrar todos los resultados o un número máximo definido
         if not self.show_all and num_results > self.SHOW_MAX:
             print(f"Showing the first {self.SHOW_MAX} results out of {num_results}:")
-            display_results = results[:self.SHOW_MAX]
+            display_results = results[self.SHOW_MAX:]
         else:
             print("Showing all results:")
             display_results = results
         
         # Muestra más información sobre cada resultado si está habilitado
+        number = 0
         for idx in display_results:
             article = self.articles.get(idx, {})
-            if self.show_snippet:
-                # Asumiendo que 'all' contiene el texto completo del artículo y mostramos solo los primeros 150 caracteres
-                snippet = article['all'][:150] + '...'
-                print(f"Doc ID: {idx}, URL: {article.get('url', 'URL not available')}, Snippet: {snippet}")
-            else:
-                # Solo muestra el ID y la URL del documento
-                print(f"Doc ID: {idx}, URL: {article.get('url', 'URL not available')}")
+            number += 1
+            # Obtener la ruta del primer elemento de self.docs.keys()
+            depth = 100
+            docslen = len(self.docs)
+            artlen = len(self.articles)
+            docid = int((idx+1) % depth)
+            
+            print("Docslen: ", docslen)
+            print("Artlen: ", artlen)
+            print("Depth: ", depth)
+            
+            
+            
+            # snippet = article['all'][:150] + '...'
+            print(f"# {number} Doc ID: {docid}, URL: {article}, Snippet: {0}")
 
+        print(f"Google: {self.articles.get(207,{})}")
+        print("Docs: ", next(iter(self.docs.keys()), None))
         
 
 
