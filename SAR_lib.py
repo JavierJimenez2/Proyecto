@@ -266,7 +266,13 @@ class SAR_Indexer:
 
             for field in fields_to_index:
                 text = j[field]
+                # quitar en las urls los https://es.wikipedia.org/wiki/
+                if field == 'url':
+                    text = urllib.parse.unquote(text)
+                    text = text.replace('https://es.wikipedia.org/wiki/', '')
+
                 tokens = self.tokenize(text)
+
                 for token in tokens:
                     if field not in self.index:
                         self.index[field] = {}
@@ -870,6 +876,7 @@ class SAR_Indexer:
         if not self.show_all and num_results > self.SHOW_MAX:
             print(f"Showing the first {self.SHOW_MAX} results out of {num_results}:")
             display_results = results[self.SHOW_MAX:]
+            display_results = results
         else:
             print("Showing all results:")
             display_results = results
@@ -886,6 +893,8 @@ class SAR_Indexer:
             docslen = len(self.docs)
             artlen = len(self.articles)
             docid = int((idx + 1) % depth)
+
+            # snippet=self.parse_article(open(jsonFile))
 
             # print("Docslen: ", docslen)
             # print("Artlen: ", artlen)
