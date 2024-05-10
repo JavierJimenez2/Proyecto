@@ -58,6 +58,8 @@ class SAR_Indexer:
         self.use_stemming = False  # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
 
+
+
         self.max_art_doc = 0  # maximo numero de articulos en un documento
 
     ###############################
@@ -279,6 +281,8 @@ class SAR_Indexer:
                     if token not in self.index[field]:
                         self.index[field][
                             token] = []  #inicializamos su list si no lo estaba para ese token en ese field
+                    if(self.index[field][token] and self.index[field][token][-1] == art_id):
+                        continue
                     self.index[field][token].append(art_id)  # como ya nos hemos asegurado appendeamos
 
         self.max_art_doc = max(max_v, self.max_art_doc)
@@ -506,6 +510,8 @@ class SAR_Indexer:
         """
         # DECIDO HACER UN WHILE Y NO HACERLO RECURSIVO.
 
+
+
         if query is None or len(query) == 0:
             return []
 
@@ -530,7 +536,6 @@ class SAR_Indexer:
         pattern = r'\b(?:[A-Z][a-z]*|\w+)\b'
 
         tokens = re.findall(pattern, query, re.IGNORECASE)
-        print(f"Tokens: {tokens}")
 
         #nos quedamos con las posting list de todos los terminos de paso
         stack = []
@@ -546,17 +551,20 @@ class SAR_Indexer:
                 stackterm.append(token.lower())
                 current_posting = self.get_posting(token, field)
                 stack.append(current_posting)
-
+        if not stackop:
+            return stack[-1] if stack else []
         # pila resautlados
         result_stack = []
         current_posting = stack.pop()
-        second_term = stack.pop()
+        if stack:
+            second_term = stack.pop()
 
-        # eliminar repetidos
-        second_term = sorted(set(second_term))
-        current_posting = sorted(set(current_posting))
         while stackop:
             operator = stackop.pop()
+            if stackop:
+                if stackop[-1] == 'NOT':
+                    next_operator = stackop.pop()
+                    second_term = self.reverse_posting(second_term)
             if operator == 'AND':
                 current_posting = self.and_posting(second_term, current_posting)
             elif operator == 'OR':
@@ -875,8 +883,7 @@ class SAR_Indexer:
         # Decide si mostrar todos los resultados o un número máximo definido
         if not self.show_all and num_results > self.SHOW_MAX:
             print(f"Showing the first {self.SHOW_MAX} results out of {num_results}:")
-            display_results = results[self.SHOW_MAX:]
-            display_results = results
+            display_results = results[:self.SHOW_MAX]
         else:
             print("Showing all results:")
             display_results = results
@@ -889,10 +896,15 @@ class SAR_Indexer:
             # Obtener la ruta del primer elemento de self.docs.keys()
             jsonFile = next(iter(self.docs.keys()), None)
             # obtener el numero de elementos en el archivo json
-            depth = int(jsonFile.split('\\')[-2])
+            depth = jsonFile.split('\\')[-2]
+            # get number of the string
+            # how to know if contains a substring
+            if "/" in depth:
+                depth = int(depth.split('/')[-1])
+
             docslen = len(self.docs)
             artlen = len(self.articles)
-            docid = int((idx + 1) % depth)
+            docid = int((idx+1) % depth)
 
             # snippet=self.parse_article(open(jsonFile))
 

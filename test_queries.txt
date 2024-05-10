@@ -1,0 +1,6 @@
+precisión	28
+exhaustividad	4
+precisión AND exhaustividad	1
+precisión OR exhaustividad	29
+precisión AND NOT exhaustividad	25
+NOT precisión AND exhaustividad	1
