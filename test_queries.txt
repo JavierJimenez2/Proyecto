@@ -41,7 +41,6 @@ años AND google	19
 años AND cultura	33
 
 
-
 #
 # MULTIFIELD
 #
@@ -65,7 +64,7 @@ programación	109
 Oric	5
 all:almacenamiento	54
 all:programación	109
-all:Oric	5
+all:Oric	
 title:almacenamiento	1
 title:programación	16
 title:Oric	2
