@@ -888,36 +888,33 @@ class SAR_Indexer:
 
         # Muestra más información sobre cada resultado si está habilitado
         number = 0
-        # for idx in display_results:
-        #     article = self.articles.get(idx, {})
-        #     number += 1
-        #     # Obtener la ruta del primer elemento de self.docs.keys()
-        #     jsonFile = next(iter(self.docs.keys()), None)
-        #     # obtener el numero de elementos en el archivo json
-        #     depth = jsonFile.split('\\')[-2]
-        #     # get number of the string
-        #     # how to know if contains a substring
-        #     if "/" in depth:
-        #         depth = int(depth.split('/')[-1])
+        for idx in display_results:
+            article = self.articles.get(idx, {})
+            number += 1
+            # Obtener la ruta del primer elemento de self.docs.keys()
+            jsonFile = next(iter(self.docs.keys()), None)
+            # obtener el numero de elementos en el archivo json
+            depth = jsonFile.split('\\')[-2]
+            # get number of the string
+            # how to know if contains a substring
+            if "/" in depth:
+                depth = int(depth.split('/')[-1])
+            else:
+                depth= int(depth)
+            docslen = len(self.docs)
+            artlen = len(self.articles)
+            docid = int((idx+1) % depth)
 
-        #     docslen = len(self.docs)
-        #     artlen = len(self.articles)
-        #     docid = int((idx+1) % depth)
+            # snippet=self.parse_article(open(jsonFile))
 
-        #     # snippet=self.parse_article(open(jsonFile))
+            digit = f"{number:02}"
+            digit_doc_id = f"{docid:02}"
+            name_url = article.split('/')[-1]
+            name_url = urllib.parse.unquote(name_url)
+            name_url = name_url.replace('_', ' ')
+            # ir al json y obtener el summary
 
-        #     # print("Docslen: ", docslen)
-        #     # print("Artlen: ", artlen)
-        #     # print("Depth: ", depth)
-
-        #     digit = f"{number:02}"
-        #     digit_doc_id = f"{docid:02}"
-        #     name_url = article.split('/')[-1]
-        #     name_url = urllib.parse.unquote(name_url)
-        #     name_url = name_url.replace('_', ' ')
-        #     # ir al json y obtener el summary
-
-        #     #hacer decode a utf-8
-        #     name_url = name_url.encode('utf-8').decode('utf-8')
-        #     print(f"# {digit} ({digit_doc_id}) {name_url}: {article}")
-        #     # print(f"Snippet: {snippet}")
+            #hacer decode a utf-8
+            name_url = name_url.encode('utf-8').decode('utf-8')
+            print(f"# {digit} ({digit_doc_id}) {name_url}: {article}")
+            # print(f"Snippet: {snippet}")
