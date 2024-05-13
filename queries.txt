@@ -1,6 +1,35 @@
-precisión
-exhaustividad
-precisión AND exhaustividad
-precisión OR exhaustividad
-precisión AND NOT exhaustividad
-NOT precisión AND exhaustividad
+#
+# MULTIFIELD
+#
+
+búsqueda	
+recuperación	
+title:información	
+summary:búsqueda	
+summary:recuperación	
+section-name:historia	
+section-name:precisión	
+NOT section-name:precisión
+title:información AND summary:búsqueda	
+title:información AND summary:recuperación
+title:información AND búsqueda	
+title:información AND recuperación
+stitle:información AND summary:recuperación AND section-name:precisión	
+title:información AND summary:recuperación AND NOT section-name:precisión	
+almacenamiento	
+programación	
+Oric	
+all:almacenamiento	
+all:programación	
+all:Oric	
+title:almacenamiento	
+title:programación	
+title:Oric	
+summary:almacenamiento	
+summary:programación	
+summary:Oric	
+section-name:historia	
+title:almacenamiento AND summary:almacenamiento	
+title:almacenamiento OR summary:almacenamiento	
+summary:Oric AND NOT title:Oric	
+summary:almacenamiento AND section-name:historia	

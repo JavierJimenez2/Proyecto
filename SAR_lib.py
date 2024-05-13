@@ -522,35 +522,32 @@ class SAR_Indexer:
         # vamos a detectar con la ayuda de esta expresion regular cada uno de estos operadores. es la fdorma mas segura de hacerlo
         # Regex para identificar si hay un campo especificado al inicio de la consulta 
         # Identificar si hay un campo especificado al inicio de la consulta
-        field_pattern = r'^(?P<field>\w+):'
-        match = re.match(field_pattern, query)
-        if match:
-            field = match.group('field')
-            query = query[len(field) + 1:].strip()  # Elimina el prefijo del campo
-            self.multifield = True  # Activa la opción de índices múltiples
-        else:
-            field = 'all'  # Campo por defecto si no se especifica
-            self.multifield = False  # Desactiva la opción de índices múltiples
+        pattern = r'(\b(?:AND|OR|NOT)\b|\w+[-\w]*:\s*[^:\s]+|\b\w+\b)'
+        pattern2 = r"^(?P<field>[\w-]+)\s*:\s*(?P<term>.+)$"
 
-        # vamos a detectar con la ayuda de esta expresion regular cada uno de estos operadores. es la fdorma mas segura de hacerlo
-        pattern = r'\b(?:[A-Z][a-z]*|\w+)\b'
 
         tokens = re.findall(pattern, query, re.IGNORECASE)
-
+        
         #nos quedamos con las posting list de todos los terminos de paso
         stack = []
         #para operadores
         stackop = []
         #para terminos
         stackterm = []
-
         for token in tokens:
             if token in ('AND', 'OR', 'NOT'):
-                stackop.append(token)
+                stackop.insert(0, token)
             else:
-                stackterm.append(token.lower())
-                current_posting = self.get_posting(token, field)
-                stack.append(current_posting)
+                match = re.search(pattern2, token, re.IGNORECASE)
+                if match:
+                    field = match.group('field')
+                    term = match.group('term').strip().lower()  # Elimina espacios en blanco alrededor del término
+                else:
+                    field = 'all'
+                    term = token
+                stackterm.insert(0,term.lower())
+                current_posting = self.get_posting(term.lower(), field)
+                stack.insert(0,current_posting)
         if not stackop:
             return stack[-1] if stack else []
         # pila resautlados
@@ -571,17 +568,18 @@ class SAR_Indexer:
                 current_posting = self.or_posting(second_term, current_posting)
             elif operator == 'NOT':
                 current_posting = self.reverse_posting(current_posting)
-            if result_stack:
-                second_term = result_stack.pop()
-            result_stack.append(current_posting)
+            
+            if stack:
+                second_term = stack.pop()
+            # result_stack.append(current_posting)
+
+            
 
 
 
 
-
-        return result_stack[-1] if result_stack else []
-        # return []
-
+        return current_posting
+        # return result_stack[-1] if result_stack else []
     def get_posting(self, term: str, field: Optional[str] = None):
         """
         Devuelve la posting list asociada a un término.
@@ -890,36 +888,36 @@ class SAR_Indexer:
 
         # Muestra más información sobre cada resultado si está habilitado
         number = 0
-        for idx in display_results:
-            article = self.articles.get(idx, {})
-            number += 1
-            # Obtener la ruta del primer elemento de self.docs.keys()
-            jsonFile = next(iter(self.docs.keys()), None)
-            # obtener el numero de elementos en el archivo json
-            depth = jsonFile.split('\\')[-2]
-            # get number of the string
-            # how to know if contains a substring
-            if "/" in depth:
-                depth = int(depth.split('/')[-1])
+        # for idx in display_results:
+        #     article = self.articles.get(idx, {})
+        #     number += 1
+        #     # Obtener la ruta del primer elemento de self.docs.keys()
+        #     jsonFile = next(iter(self.docs.keys()), None)
+        #     # obtener el numero de elementos en el archivo json
+        #     depth = jsonFile.split('\\')[-2]
+        #     # get number of the string
+        #     # how to know if contains a substring
+        #     if "/" in depth:
+        #         depth = int(depth.split('/')[-1])
 
-            docslen = len(self.docs)
-            artlen = len(self.articles)
-            docid = int((idx+1) % depth)
+        #     docslen = len(self.docs)
+        #     artlen = len(self.articles)
+        #     docid = int((idx+1) % depth)
 
-            # snippet=self.parse_article(open(jsonFile))
+        #     # snippet=self.parse_article(open(jsonFile))
 
-            # print("Docslen: ", docslen)
-            # print("Artlen: ", artlen)
-            # print("Depth: ", depth)
+        #     # print("Docslen: ", docslen)
+        #     # print("Artlen: ", artlen)
+        #     # print("Depth: ", depth)
 
-            digit = f"{number:02}"
-            digit_doc_id = f"{docid:02}"
-            name_url = article.split('/')[-1]
-            name_url = urllib.parse.unquote(name_url)
-            name_url = name_url.replace('_', ' ')
-            # ir al json y obtener el summary
+        #     digit = f"{number:02}"
+        #     digit_doc_id = f"{docid:02}"
+        #     name_url = article.split('/')[-1]
+        #     name_url = urllib.parse.unquote(name_url)
+        #     name_url = name_url.replace('_', ' ')
+        #     # ir al json y obtener el summary
 
-            #hacer decode a utf-8
-            name_url = name_url.encode('utf-8').decode('utf-8')
-            print(f"# {digit} ({digit_doc_id}) {name_url}: {article}")
-            # print(f"Snippet: {snippet}")
+        #     #hacer decode a utf-8
+        #     name_url = name_url.encode('utf-8').decode('utf-8')
+        #     print(f"# {digit} ({digit_doc_id}) {name_url}: {article}")
+        #     # print(f"Snippet: {snippet}")
