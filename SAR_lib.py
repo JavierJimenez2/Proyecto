@@ -383,6 +383,7 @@ class SAR_Indexer:
                     # Guardamos la permutacion con referencia al término original
                     self.ptindex[field][permuterm] = term
 
+
         # print("Self.index", self.index)
 
         # for term in self.index:
@@ -522,7 +523,8 @@ class SAR_Indexer:
         # vamos a detectar con la ayuda de esta expresion regular cada uno de estos operadores. es la fdorma mas segura de hacerlo
         # Regex para identificar si hay un campo especificado al inicio de la consulta 
         # Identificar si hay un campo especificado al inicio de la consulta
-        pattern = r'(\b(?:AND|OR|NOT)\b|\w+[-\w]*:\s*[^:\s]+|\b\w+\b)'
+        pattern = r'(\b(?:AND|OR|NOT)\b|\w+[-\w]*:\s*[^:\s]+|\b[\w\*\?]+\b)'
+        # pattern = r'(\b(?:AND|OR|NOT)\b|\w+[-\w]*:\s*[^:\s]+|\b\w+\b)'
         pattern2 = r"^(?P<field>[\w-]+)\s*:\s*(?P<term>.+)$"
 
 
@@ -558,8 +560,8 @@ class SAR_Indexer:
 
         while stackop:
             operator = stackop.pop()
-            if stackop:
-                if stackop[-1] == 'NOT':
+            if operator != "NOT":
+                if stackop and stackop[-1] == 'NOT':
                     next_operator = stackop.pop()
                     second_term = self.reverse_posting(second_term)
             if operator == 'AND':
@@ -568,6 +570,7 @@ class SAR_Indexer:
                 current_posting = self.or_posting(second_term, current_posting)
             elif operator == 'NOT':
                 current_posting = self.reverse_posting(current_posting)
+                continue
             
             if stack:
                 second_term = stack.pop()
@@ -594,9 +597,11 @@ class SAR_Indexer:
         return: posting list
         NECESARIO PARA TODAS LAS VERSIONES
         """
-        # Si el término contiene un comodín, usa el índice de permuterm
-        if '*' in term or '?' in term:
+        if re.search(r'[\*\?]', term):
             return self.get_permuterm(term, field)
+        # Si el término contiene un comodín, usa el índice de permuterm
+        # if '*' in term or '?' in term:
+        #     return self.get_permuterm(term, field)
 
         # Si el stemming está activo, recupera la posting list usando el índice de stemming
         if self.use_stemming:
@@ -674,29 +679,39 @@ class SAR_Indexer:
         return: posting list
 
         """
-        # Determinar el patrón de búsqueda basado en el comodín presente
+        
         if '*' in term:
             split_term = term.split('*')
             # Coloca el comodín al final del término
-            permuterm_term = split_term[1] + split_term[0] + '$'
+            pbusqueda = split_term[0]
+            sbusqueda = split_term[1] + '$'
+            l = 0
         elif '?' in term:
             split_term = term.split('?')
             # Coloca el comodín al final del término
-            permuterm_term = split_term[1] + split_term[0] + '$'
+            pbusqueda = split_term[0]
+            sbusqueda = split_term[1] + '$'
+            l = len(term)
 
         matching_terms = []
-
         # Buscar en el índice permuterm correspondiente al campo especificado
         if field and field in self.ptindex:
             for permuterm, term in self.ptindex[field].items():
-                if permuterm.startswith(permuterm_term):
-                    matching_terms.append(term)
+                if permuterm.startswith(pbusqueda) and permuterm.endswith(sbusqueda) :
+                    if l == 0:
+                        matching_terms.append(term)                            
+                    elif l == len(term):
+                        matching_terms.append(term)
+                    
         elif field is None:
             # Si no se especifica campo, buscar en todos los campos
             for field_pt in self.ptindex.values():
                 for permuterm, term in field_pt.items():
-                    if permuterm.startswith(permuterm_term):
-                        matching_terms.append(term)
+                    if permuterm.startswith(pbusqueda) and permuterm.endswith(sbusqueda) :
+                        if l == 0:
+                            matching_terms.append(term)                            
+                        elif l == len(term):
+                            matching_terms.append(term)
         else:
             return []  # Si el campo no existe en el índice, devolver lista vacía
 
@@ -746,6 +761,8 @@ class SAR_Indexer:
         return: posting list con los artid incluidos en p1 y p2
 
         """
+        p1 = sorted(p1, reverse=False)
+        p2 = sorted(p2, reverse=False)
         i = 0
         j = 0
         sol = []
@@ -776,7 +793,8 @@ class SAR_Indexer:
         return: posting list con los artid incluidos de p1 o p2
 
         """
-
+        p1 = sorted(p1, reverse=False)
+        p2 = sorted(p2, reverse=False)
         i = 0
         j = 0
         sol = []
