@@ -270,18 +270,18 @@ class SAR_Indexer:
                 text = j[field]
                 # quitar en las urls los https://es.wikipedia.org/wiki/
                 if field == 'url':
-                    text = urllib.parse.unquote(text)
-                    text = text.replace('https://es.wikipedia.org/wiki/', '')
-
-                tokens = self.tokenize(text)
+                    tokens = [text]
+                    # text = urllib.parse.unquote(text)
+                    # text = text.replace('https://es.wikipedia.org/wiki/', '')
+                else:
+                    tokens = self.tokenize(text)
 
                 for token in tokens:
                     if field not in self.index:
                         self.index[field] = {}
                     if token not in self.index[field]:
-                        self.index[field][
-                            token] = []  #inicializamos su list si no lo estaba para ese token en ese field
-                    if(self.index[field][token] and self.index[field][token][-1] == art_id):
+                        self.index[field][token] = []  #inicializamos su list si no lo estaba para ese token en ese field
+                    if self.index[field][token] and self.index[field][token][-1] == art_id:
                         continue
                     self.index[field][token].append(art_id)  # como ya nos hemos asegurado appendeamos
 
