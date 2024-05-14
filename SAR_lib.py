@@ -520,69 +520,73 @@ class SAR_Indexer:
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
 
-        # vamos a detectar con la ayuda de esta expresion regular cada uno de estos operadores. es la fdorma mas segura de hacerlo
-        # Regex para identificar si hay un campo especificado al inicio de la consulta 
-        # Identificar si hay un campo especificado al inicio de la consulta
-        pattern = r'(\b(?:AND|OR|NOT)\b|\w+[-\w]*:\s*[^:\s]+|\b[\w\*\?]+\b)'
-        # pattern = r'(\b(?:AND|OR|NOT)\b|\w+[-\w]*:\s*[^:\s]+|\b\w+\b)'
+        pattern = r'(\b(?:AND|OR|NOT)\b|\(|\)|\w+[-\w]*:\s*[^:\s]+|\b[\w\*\?]+\b)'
         pattern2 = r"^(?P<field>[\w-]+)\s*:\s*(?P<term>.+)$"
 
-
         tokens = re.findall(pattern, query, re.IGNORECASE)
-        
-        #nos quedamos con las posting list de todos los terminos de paso
-        stack = []
-        #para operadores
-        stackop = []
-        #para terminos
-        stackterm = []
+        output_queue = []
+        operator_stack = []
+
         for token in tokens:
-            if token in ('AND', 'OR', 'NOT'):
-                stackop.insert(0, token)
+            if re.match(r'\b(?:AND|OR|NOT)\b', token, re.IGNORECASE):
+                while (operator_stack and operator_stack[-1] != '(' and
+                       self.precedence(operator_stack[-1]) >= self.precedence(token)):
+                    output_queue.append(operator_stack.pop())
+                operator_stack.append(token)
+            elif token == '(':
+                operator_stack.append(token)
+            elif token == ')':
+                while operator_stack and operator_stack[-1] != '(':
+                    output_queue.append(operator_stack.pop())
+                operator_stack.pop()
             else:
                 match = re.search(pattern2, token, re.IGNORECASE)
                 if match:
                     field = match.group('field')
-                    term = match.group('term').strip().lower()  # Elimina espacios en blanco alrededor del término
+                    term = match.group('term').strip().lower()
                 else:
                     field = 'all'
                     term = token
-                stackterm.insert(0,term.lower())
-                current_posting = self.get_posting(term.lower(), field)
-                stack.insert(0,current_posting)
-        if not stackop:
-            return stack[-1] if stack else []
-        # pila resautlados
-        result_stack = []
-        current_posting = stack.pop()
-        if stack:
-            second_term = stack.pop()
+                output_queue.append((term.lower(), field))
 
-        while stackop:
-            operator = stackop.pop()
-            if operator != "NOT":
-                if stackop and stackop[-1] == 'NOT':
-                    next_operator = stackop.pop()
-                    second_term = self.reverse_posting(second_term)
-            if operator == 'AND':
-                current_posting = self.and_posting(second_term, current_posting)
-            elif operator == 'OR':
-                current_posting = self.or_posting(second_term, current_posting)
-            elif operator == 'NOT':
-                current_posting = self.reverse_posting(current_posting)
-                continue
-            
-            if stack:
-                second_term = stack.pop()
-            # result_stack.append(current_posting)
+        while operator_stack:
+            output_queue.append(operator_stack.pop())
 
-            
+        return self.evaluate_postfix(output_queue)
+
+    def precedence(self, operator):
+        if operator == 'NOT':
+            return 3
+        elif operator in ('AND', 'OR'):
+            return 2
+        return 1
+
+    def evaluate_postfix(self, tokens):
+        stack = []
+
+        for token in tokens:
+            if isinstance(token, tuple):
+                term, field = token
+                current_posting = self.get_posting(term, field)
+                stack.append(current_posting)
+            else:
+                if token == 'AND':
+                    right = stack.pop()
+                    left = stack.pop()
+                    result = self.and_posting(left, right)
+                elif token == 'OR':
+                    right = stack.pop()
+                    left = stack.pop()
+                    result = self.or_posting(left, right)
+                elif token == 'NOT':
+                    operand = stack.pop()
+                    result = self.reverse_posting(operand)
+                stack.append(result)
+
+        return stack.pop() if stack else []
 
 
 
-
-        return current_posting
-        # return result_stack[-1] if result_stack else []
     def get_posting(self, term: str, field: Optional[str] = None):
         """
         Devuelve la posting list asociada a un término.

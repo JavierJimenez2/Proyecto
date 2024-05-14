@@ -37,6 +37,33 @@ años AND google	295
 años AND cultura	363
 
 
+#
+# PARENTESIS
+#
+precisión	198
+precisión AND exhaustividad	6
+precisión OR exhaustividad	199
+precisión AND NOT exhaustividad	192
+NOT precisión OR NOT exhaustividad	2773
+NOT (precisión AND exhaustividad)	2773
+NOT precisión AND NOT exhaustividad	2580
+NOT (NOT precisión AND NOT exhaustividad)	199
+años AND google OR cultura	625
+años AND (google OR cultura)	576
+(google OR cultura) AND años	576
+años AND NOT (google OR cultura)	1000
+años AND (NOT google AND NOT cultura)	1000
+NOT (google OR cultura) AND años	1000
+(psoe OR pp OR CiU)	587
+(economía OR política)	796
+(psoe OR pp OR CiU) AND (economía OR política)	285
+NOT (psoe OR pp OR CiU) AND (economía OR política)	511
+mujer	414
+mujer AND ((psoe OR pp OR CiU) AND (economía OR política))	139
+mujer AND (NOT (psoe OR pp OR CiU) AND (economía OR política))	171
+
+
+
 
 #
 # MULTIFIELD
@@ -99,5 +126,4 @@ c*sa OR c?sa	1002
 c*sa AND NOT c?sa	359
 ma?a AND NOT mata	422
 bar*na OR val*cia OR pa*s	2228
-
 
