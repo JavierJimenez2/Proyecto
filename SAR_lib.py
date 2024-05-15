@@ -256,7 +256,7 @@ class SAR_Indexer:
 
             #nos asegu5remos que los vamos a ir guardando en orden uno tras otro
             art_id = len(self.articles)
-            self.articles[art_id] = j['url']
+            self.articles[art_id] = (i, j['url'])
 
             #usaremos uno u otro dependiendo de si la funcion esta activa o no
             if self.multifield:
@@ -701,7 +701,9 @@ class SAR_Indexer:
         # Buscar en el índice permuterm correspondiente al campo especificado
         if field and field in self.ptindex:
             for permuterm, term in self.ptindex[field].items():
-                if permuterm.startswith(pbusqueda) and permuterm.endswith(sbusqueda) :
+                pb = permuterm.startswith(pbusqueda)
+                sb = permuterm.endswith(sbusqueda)
+                if pb and sb:
                     if l == 0:
                         matching_terms.append(term)                            
                     elif l == len(term):
@@ -910,7 +912,7 @@ class SAR_Indexer:
         # Muestra más información sobre cada resultado si está habilitado
         number = 0
         for idx in display_results:
-            article = self.articles.get(idx, {})
+            art_id, article = self.articles.get(idx, {})
             number += 1
             # Obtener la ruta del primer elemento de self.docs.keys()
             jsonFile = next(iter(self.docs.keys()), None)
@@ -929,7 +931,7 @@ class SAR_Indexer:
             # snippet=self.parse_article(open(jsonFile))
 
             digit = f"{number:02}"
-            digit_doc_id = f"{docid:02}"
+            art_id = f"{art_id:02}"
             name_url = article.split('/')[-1]
             name_url = urllib.parse.unquote(name_url)
             name_url = name_url.replace('_', ' ')
@@ -937,7 +939,7 @@ class SAR_Indexer:
 
             #hacer decode a utf-8
             name_url = name_url.encode('utf-8').decode('utf-8')
-            print(f"# {digit} ({digit_doc_id}) {name_url}: {article}")
+            print(f"# {digit} ({art_id}) {name_url}: {article}")
             # print(f"Snippet: {snippet}")
         print("=" * 40)
         print(f"Number of results: {num_results}")
