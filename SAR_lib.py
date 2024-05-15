@@ -898,7 +898,6 @@ class SAR_Indexer:
         num_results = len(results)
 
         # Muestra el número total de resultados si no es la opción -T, sino solo cuenta los resultados
-        print(f"Query: '{query}'\nNumber of results: {num_results}")
 
         # Decide si mostrar todos los resultados o un número máximo definido
         if not self.show_all and num_results > self.SHOW_MAX:
@@ -907,7 +906,7 @@ class SAR_Indexer:
         else:
             print("Showing all results:")
             display_results = results
-
+        print("=" * 40)
         # Muestra más información sobre cada resultado si está habilitado
         number = 0
         for idx in display_results:
@@ -940,3 +939,5 @@ class SAR_Indexer:
             name_url = name_url.encode('utf-8').decode('utf-8')
             print(f"# {digit} ({digit_doc_id}) {name_url}: {article}")
             # print(f"Snippet: {snippet}")
+        print("=" * 40)
+        print(f"Number of results: {num_results}")
