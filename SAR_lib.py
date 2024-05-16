@@ -57,6 +57,7 @@ class SAR_Indexer:
         self.show_snippet = False  # valor por defecto, se cambia con self.set_snippet()
         self.use_stemming = False  # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
+        self.positional_index = {}
 
 
 
@@ -253,7 +254,6 @@ class SAR_Indexer:
                 continue
 
             self.urls.add(j['url'])
-
             #nos asegu5remos que los vamos a ir guardando en orden uno tras otro
             art_id = len(self.articles)
             self.articles[art_id] = (i, j['url'])
