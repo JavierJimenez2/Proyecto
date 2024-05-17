@@ -58,8 +58,7 @@ class SAR_Indexer:
         self.use_stemming = False  # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
         self.positional_index = {}
-
-
+        self.terms = {}
 
         self.max_art_doc = 0  # maximo numero de articulos en un documento
 
@@ -280,7 +279,8 @@ class SAR_Indexer:
                     if field not in self.index:
                         self.index[field] = {}
                     if token not in self.index[field]:
-                        self.index[field][token] = []  #inicializamos su list si no lo estaba para ese token en ese field
+                        self.index[field][
+                            token] = []  #inicializamos su list si no lo estaba para ese token en ese field
                     if self.index[field][token] and self.index[field][token][-1] == art_id:
                         continue
                     self.index[field][token].append(art_id)  # como ya nos hemos asegurado appendeamos
@@ -382,7 +382,6 @@ class SAR_Indexer:
                     permuterm = rotated_term[i:] + rotated_term[:i]
                     # Guardamos la permutacion con referencia al término original
                     self.ptindex[field][permuterm] = term
-
 
         # print("Self.index", self.index)
 
@@ -511,8 +510,6 @@ class SAR_Indexer:
         """
         # DECIDO HACER UN WHILE Y NO HACERLO RECURSIVO.
 
-
-
         if query is None or len(query) == 0:
             return []
 
@@ -549,6 +546,7 @@ class SAR_Indexer:
                     term = token
                 output_queue.append((term.lower(), field))
 
+        self.terms = list(output_queue)
         while operator_stack:
             output_queue.append(operator_stack.pop())
 
@@ -584,8 +582,6 @@ class SAR_Indexer:
                 stack.append(result)
 
         return stack.pop() if stack else []
-
-
 
     def get_posting(self, term: str, field: Optional[str] = None):
         """
@@ -683,7 +679,7 @@ class SAR_Indexer:
         return: posting list
 
         """
-        
+
         if '*' in term:
             split_term = term.split('*')
             # Coloca el comodín al final del término
@@ -705,17 +701,17 @@ class SAR_Indexer:
                 sb = permuterm.endswith(sbusqueda)
                 if pb and sb:
                     if l == 0:
-                        matching_terms.append(term)                            
+                        matching_terms.append(term)
                     elif l == len(term):
                         matching_terms.append(term)
-                    
+
         elif field is None:
             # Si no se especifica campo, buscar en todos los campos
             for field_pt in self.ptindex.values():
                 for permuterm, term in field_pt.items():
-                    if permuterm.startswith(pbusqueda) and permuterm.endswith(sbusqueda) :
+                    if permuterm.startswith(pbusqueda) and permuterm.endswith(sbusqueda):
                         if l == 0:
-                            matching_terms.append(term)                            
+                            matching_terms.append(term)
                         elif l == len(term):
                             matching_terms.append(term)
         else:
@@ -915,18 +911,18 @@ class SAR_Indexer:
             art_id, article = self.articles.get(idx, {})
             number += 1
             # Obtener la ruta del primer elemento de self.docs.keys()
-            jsonFile = next(iter(self.docs.keys()), None)
+            jsonFile = sorted(list(self.docs.keys()))
             # obtener el numero de elementos en el archivo json
-            depth = jsonFile.split('\\')[-2]
+            depth = jsonFile[0].split('\\')[-2]
             # get number of the string
             # how to know if contains a substring
             if "/" in depth:
                 depth = int(depth.split('/')[-1])
             else:
-                depth= int(depth)
+                depth = int(depth)
             docslen = len(self.docs)
             artlen = len(self.articles)
-            docid = int((idx+1) % depth)
+            docid = int((idx + 1) / depth)
 
             # snippet=self.parse_article(open(jsonFile))
 
@@ -940,6 +936,45 @@ class SAR_Indexer:
             #hacer decode a utf-8
             name_url = name_url.encode('utf-8').decode('utf-8')
             print(f"# {digit} ({art_id}) {name_url}: {article}")
-            # print(f"Snippet: {snippet}")
+            if self.show_snippet:
+                print(f"Snippet: ")
+                file = jsonFile[docid]
+                #change \ to /
+                # print(f"File: {file}")
+                for i, line in enumerate(open(file)):
+                    if i == int(art_id):
+                        j = self.parse_article(line)
+                terms=[]
+                for i in self.terms:
+                    term, field = i
+                    terms.append(term)
+                body = self.tokenize(j['all'])
+                # n=1
+                visited = []
+                for i, token in enumerate(body):
+                    if token in terms and token not in visited:
+                        if i < 5:
+                            snip_list = body[:i+5]
+                            snip = ' '.join(snip_list)
+                            print(f"{snip}... ", end='')
+                        elif i > len(body) - 5:
+                            snip_list = body[i-5:]
+                            snip = ' '.join(snip_list)
+                            print(f"...{snip} ", end='')
+                        else:
+                            snip_list = body[i-5:i+5]
+                            snip = ' '.join(snip_list)
+                            print(f"...{snip}... ", end='')
+                        for word in snip_list:
+                            if word in terms:
+                                visited.append(word)
+                        # n=0
+
+                print("\n")
+
+
+
+                # file = file.replace('\\', '/')
+
         print("=" * 40)
         print(f"Number of results: {num_results}")
