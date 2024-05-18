@@ -913,7 +913,10 @@ class SAR_Indexer:
             # Obtener la ruta del primer elemento de self.docs.keys()
             jsonFile = sorted(list(self.docs.keys()))
             # obtener el numero de elementos en el archivo json
-            depth = jsonFile[0].split('\\')[-2]
+            if "\\" in jsonFile[0]:
+                depth = jsonFile[0].split('\\')[-2]
+            else:
+                depth = jsonFile[0].split('/')[1]
             # get number of the string
             # how to know if contains a substring
             if "/" in depth:
