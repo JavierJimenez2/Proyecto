@@ -944,6 +944,9 @@ class SAR_Indexer:
                 file = jsonFile[docid]
                 #change \ to /
                 # print(f"File: {file}")
+                # if is unix or mac
+                if sys.platform == 'darwin' or sys.platform == 'linux':
+                    file = file.replace('\\', '/')
                 for i, line in enumerate(open(file)):
                     if i == int(art_id):
                         j = self.parse_article(line)
@@ -977,7 +980,6 @@ class SAR_Indexer:
 
 
 
-                # file = file.replace('\\', '/')
 
         print("=" * 40)
         print(f"Number of results: {num_results}")
