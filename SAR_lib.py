@@ -405,7 +405,9 @@ class SAR_Indexer:
         Muestra estadisticas de los indices
         
         """
-        #italic in python
+        ########################################
+        ## COMPLETAR PARA TODAS LAS VERSIONES ##
+        ########################################
 
         print("=" * 40)
         print(f"Number of indexed files: {len(self.docs)}")
@@ -444,42 +446,11 @@ class SAR_Indexer:
             else:
                 print(f"\t# of stems in 'all': {len(self.sindex['all'])}")
             print("-" * 40)
-        # opciones en genral activadas
-        # print("Opciones activadas:")
-        # print(f"Stemming está {'activado' if self.use_stemming else 'desactivado'}.")
-        # print(f"Multifield está {'activado' if self.multifield else 'desactivado'}.")
-        # print(f"Permuterm está {'activado' if self.permuterm else 'desactivado'}.")
-        # print(f"Ranking de resultados está {'activado' if self.use_ranking else 'desactivado'}.")
 
-        # # num tot de documentos
-        # print(f"Número de documentos indexados: {len(self.docs)}")
+        print("Positional queries are not allowed.")
 
-        # # indice general de terminos
-        # num_terms = len(self.index)
-        # print(f"Número de términos únicos en el índice invertido: {num_terms}")
+        print("=" * 40)
 
-        # # dicc del steaming
-        # if self.sindex:
-        #     num_stems = len(self.sindex)
-        #     print(f"Número de stems únicos en el índice de stemming: {num_stems}")
-        # else:
-        #     print("Índice de stemming no utilizado o vacío.")
-
-        # # dicc del permuterm
-        # if self.ptindex:
-        #     num_permuterms = len(self.ptindex)
-        #     print(f"Número de permuterms únicos en el índice de permuterm: {num_permuterms}")
-        # else:
-        #     print("Índice de permuterm no utilizado o vacío.")
-
-        # # numero total de url
-        # print(f"Número de URLs únicas procesadas: {len(self.urls)}")
-
-        # print("-" * 40)
-
-        ########################################
-        ## COMPLETAR PARA TODAS LAS VERSIONES ##
-        ########################################
 
     #################################
     ###                           ###
@@ -510,12 +481,12 @@ class SAR_Indexer:
         """
         # DECIDO HACER UN WHILE Y NO HACERLO RECURSIVO.
 
-        if query is None or len(query) == 0:
-            return []
-
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
+        if query is None or len(query) == 0:
+            return []
+
 
         pattern = r'(\b(?:AND|OR|NOT)\b|\(|\)|\w+[-\w]*:\s*[^:\s]+|\b[\w\*\?]+\b)'
         pattern2 = r"^(?P<field>[\w-]+)\s*:\s*(?P<term>.+)$"
@@ -663,6 +634,20 @@ class SAR_Indexer:
                             posting_list.extend(self.index[fld][term])
 
         return list(set(posting_list))  # Convertir a lista y eliminar duplicados
+
+        # # Se obtiene el stem de un término
+        # stem = self.stemmer.stem(term)
+        # res = []
+        #
+        # # Se hace la unión de las posting list de cada termino que contenga la entrada en el indice de stems
+        # if stem in self.sindex[field]:
+        #
+        #     for token in self.sindex[field][stem]:
+        #         # Se utiliza el OR propio por eficiencia
+        #         res = self.or_posting(res, list(self.index[field][token].keys()))
+        #
+        # return res
+
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
@@ -863,6 +848,7 @@ class SAR_Indexer:
 
     def solve_and_test(self, ql: List[str]) -> bool:
         errors = False
+        query = ''
         for line in ql:
             if len(line) > 0 and line[0] != '#':
                 query, ref = line.split('\t')
@@ -874,7 +860,8 @@ class SAR_Indexer:
                     print(f'>>>>{query}\t{reference} != {result}<<<<')
                     errors = True
             else:
-                print(query)
+                if len(query) > 0:
+                    print(query)
         return not errors
 
     def solve_and_show(self, query: str):
@@ -950,7 +937,7 @@ class SAR_Indexer:
                 for i, line in enumerate(open(file)):
                     if i == int(art_id):
                         j = self.parse_article(line)
-                terms=[]
+                terms = []
                 for i in self.terms:
                     term, field = i
                     terms.append(term)
@@ -960,15 +947,15 @@ class SAR_Indexer:
                 for i, token in enumerate(body):
                     if token in terms and token not in visited:
                         if i < 5:
-                            snip_list = body[:i+5]
+                            snip_list = body[:i + 5]
                             snip = ' '.join(snip_list)
                             print(f"{snip}... ", end='')
                         elif i > len(body) - 5:
-                            snip_list = body[i-5:]
+                            snip_list = body[i - 5:]
                             snip = ' '.join(snip_list)
                             print(f"...{snip} ", end='')
                         else:
-                            snip_list = body[i-5:i+5]
+                            snip_list = body[i - 5:i + 5]
                             snip = ' '.join(snip_list)
                             print(f"...{snip}... ", end='')
                         for word in snip_list:
@@ -977,9 +964,6 @@ class SAR_Indexer:
                         # n=0
 
                 print("\n")
-
-
-
 
         print("=" * 40)
         print(f"Number of results: {num_results}")
