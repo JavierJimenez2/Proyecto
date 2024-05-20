@@ -130,7 +130,7 @@ class SAR_Indexer:
         Carga la información del índice desde un fichero en formato binario
         
         """
-        #info = [self.all_atribs] + [getattr(self, atr) for atr in self.all_atribs]
+        # info = [self.all_atribs] + [getattr(self, atr) for atr in self.all_atribs]
         with open(filename, 'rb') as fh:
             info = pickle.load(fh)
         atrs = info[0]
@@ -154,6 +154,7 @@ class SAR_Indexer:
         """
         return article['url'] in self.urls
 
+    # Realizado por: Victor Merino Caballé
     def index_dir(self, root: str, **args):
         """
         
@@ -229,6 +230,7 @@ class SAR_Indexer:
 
         return article
 
+    # Realizado por: Javier Jiménez
     def index_file(self, filename: str):
         """
 
@@ -253,17 +255,17 @@ class SAR_Indexer:
                 continue
 
             self.urls.add(j['url'])
-            #nos asegu5remos que los vamos a ir guardando en orden uno tras otro
+            # nos asegu5remos que los vamos a ir guardando en orden uno tras otro
             art_id = len(self.articles)
             self.articles[art_id] = (i, j['url'])
 
-            #usaremos uno u otro dependiendo de si la funcion esta activa o no
+            # usaremos uno u otro dependiendo de si la funcion esta activa o no
             if self.multifield:
                 fields_to_index = ['url', 'title', 'summary', 'all', 'section-name']
             else:
                 fields_to_index = ['all']
 
-                #ahora a diferencia de solo all tenmos que hacer la indexacion para cada podrible campo o solo all
+                # ahora a diferencia de solo all tenmos que hacer la indexacion para cada podrible campo o solo all
 
             for field in fields_to_index:
                 text = j[field]
@@ -280,7 +282,7 @@ class SAR_Indexer:
                         self.index[field] = {}
                     if token not in self.index[field]:
                         self.index[field][
-                            token] = []  #inicializamos su list si no lo estaba para ese token en ese field
+                            token] = []  # inicializamos su list si no lo estaba para ese token en ese field
                     if self.index[field][token] and self.index[field][token][-1] == art_id:
                         continue
                     self.index[field][token].append(art_id)  # como ya nos hemos asegurado appendeamos
@@ -325,6 +327,7 @@ class SAR_Indexer:
         """
         return self.tokenizer.sub(' ', text.lower()).split()
 
+    # Realizado por: Javier Branchadell
     def make_stemming(self):
         """
 
@@ -359,6 +362,7 @@ class SAR_Indexer:
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
 
+    # Realizado por: Javier Branchadell
     def make_permuterm(self):
         """
 
@@ -398,6 +402,7 @@ class SAR_Indexer:
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
 
+    # Realizado por: Javier Jiménez
     def show_stats(self):
         """
         NECESARIO PARA TODAS LAS VERSIONES
@@ -451,7 +456,6 @@ class SAR_Indexer:
 
         print("=" * 40)
 
-
     #################################
     ###                           ###
     ###   PARTE 2: RECUPERACION   ###
@@ -464,6 +468,7 @@ class SAR_Indexer:
     ###                             ###
     ###################################
 
+    # Realizado por: Javier Branchadell y Javier Jiménez
     def solve_query(self, query: str, prev: Dict = {}):
         """
         NECESARIO PARA TODAS LAS VERSIONES
@@ -486,7 +491,6 @@ class SAR_Indexer:
         ########################################
         if query is None or len(query) == 0:
             return []
-
 
         pattern = r'(\b(?:AND|OR|NOT)\b|\(|\)|\w+[-\w]*:\s*[^:\s]+|\b[\w\*\?]+\b)'
         pattern2 = r"^(?P<field>[\w-]+)\s*:\s*(?P<term>.+)$"
@@ -523,6 +527,7 @@ class SAR_Indexer:
 
         return self.evaluate_postfix(output_queue)
 
+    # Realizado por: Javier Branchadell y Javier Jiménez
     def precedence(self, operator):
         if operator == 'NOT':
             return 3
@@ -530,6 +535,7 @@ class SAR_Indexer:
             return 2
         return 1
 
+    # Realizado por: Javier Branchadell y Javier Jiménez
     def evaluate_postfix(self, tokens):
         stack = []
 
@@ -554,6 +560,7 @@ class SAR_Indexer:
 
         return stack.pop() if stack else []
 
+    # Realizado por: Javier Jiménez
     def get_posting(self, term: str, field: Optional[str] = None):
         """
         Devuelve la posting list asociada a un término.
@@ -603,6 +610,7 @@ class SAR_Indexer:
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE POSICIONALES ##
         ########################################################
 
+    # Realizado por: Javier Branchadell
     def get_stemming(self, term: str, field: Optional[str] = None):
         """
 
@@ -652,6 +660,7 @@ class SAR_Indexer:
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
 
+    # Realizado por: Javier Branchadell
     def get_permuterm(self, term: str, field: Optional[str] = None):
         """
 
@@ -713,6 +722,7 @@ class SAR_Indexer:
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA PERMUTERM ##
         ##################################################
 
+    # Realizado por: Victor Merino Caballé
     def reverse_posting(self, p: list):
         """
         NECESARIO PARA TODAS LAS VERSIONES
@@ -736,6 +746,7 @@ class SAR_Indexer:
         result = list(all_art_ids - p_set)  # al ser dos conjuntos obtenemos la diferencia
         return result
 
+    # Realizado por: Victor Merino Caballé
     def and_posting(self, p1: list, p2: list):
         """
         NECESARIO PARA TODAS LAS VERSIONES
@@ -768,6 +779,7 @@ class SAR_Indexer:
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
 
+    # Realizado por: Victor Merino Caballé
     def or_posting(self, p1: list, p2: list):
         """
         NECESARIO PARA TODAS LAS VERSIONES
@@ -796,10 +808,10 @@ class SAR_Indexer:
             else:
                 sol.append(p2[j])
                 j += 1
-        while i < len(p1):  #si aun quedan elementos en p1 sigue añadiendo hasta que termina
+        while i < len(p1):  # si aun quedan elementos en p1 sigue añadiendo hasta que termina
             sol.append(p1[i])
             i += 1
-        while j < len(p2):  #lo mismo pero en el caso de que pase con p2
+        while j < len(p2):  # lo mismo pero en el caso de que pase con p2
             sol.append(p2[j])
             j += 1
         return sol
@@ -846,7 +858,7 @@ class SAR_Indexer:
                     print(query)
         return results
 
-    def solve_and_test(self, ql:List[str]) -> bool:
+    def solve_and_test(self, ql: List[str]) -> bool:
         errors = False
         for line in ql:
             if len(line) > 0 and line[0] != '#':
@@ -864,6 +876,7 @@ class SAR_Indexer:
 
         return not errors
 
+    # Realizado por: Javier Jiménez
     def solve_and_show(self, query: str):
         """
         NECESARIO PARA TODAS LAS VERSIONES
@@ -923,13 +936,19 @@ class SAR_Indexer:
             name_url = name_url.replace('_', ' ')
             # ir al json y obtener el summary
 
-            #hacer decode a utf-8
+            # hacer decode a utf-8
             name_url = name_url.encode('utf-8').decode('utf-8')
             print(f"# {digit} ({art_id}) {name_url}: {article}")
-            if self.show_snippet:
+            # sacar el numero de terminos que hay en la consulta query
+            terms = []
+            for i in self.terms:
+                if len(i) == 2:
+                    term, field = i
+                    terms.append(term)
+            if self.show_snippet and len(terms) < 5:
                 print(f"Snippet: ")
                 file = jsonFile[docid]
-                #change \ to /
+                # change \ to /
                 # print(f"File: {file}")
                 # if is unix or mac
                 if sys.platform == 'darwin' or sys.platform == 'linux':
@@ -937,10 +956,6 @@ class SAR_Indexer:
                 for i, line in enumerate(open(file)):
                     if i == int(art_id):
                         j = self.parse_article(line)
-                terms = []
-                for i in self.terms:
-                    term, field = i
-                    terms.append(term)
                 body = self.tokenize(j['all'])
                 # n=1
                 visited = []
