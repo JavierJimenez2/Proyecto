@@ -1,0 +1,5 @@
+title:información	6
+title:Google	6
+(title:información OR title:Google )	6
+casa AND (title:información OR title:Google)	0
+c*sa AND (title:información OR title:Google)	1

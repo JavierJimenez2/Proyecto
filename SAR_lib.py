@@ -492,6 +492,7 @@ class SAR_Indexer:
         if query is None or len(query) == 0:
             return []
 
+        query = query.replace('(', ' ( ').replace(')', ' ) ')
         pattern = r'(\b(?:AND|OR|NOT)\b|\(|\)|\w+[-\w]*:\s*[^:\s]+|\b[\w\*\?]+\b)'
         pattern2 = r"^(?P<field>[\w-]+)\s*:\s*(?P<term>.+)$"
 

@@ -1,3 +1,7 @@
+#
+# MINIMO
+#
+
 casa	35
 cosa	26
 NOT casa	261
@@ -105,7 +109,6 @@ summary:almacenamiento AND section-name:historia	6
 
 
 
-
 # STEMMING
 
 
@@ -129,3 +132,18 @@ ma?a AND NOT mata	36
 bar*na OR val*cia OR pa*s	231
 
 
+
+#
+# DE TODO UN POCO
+#
+
+cosa	26
+title:búsqueda AND title:y AND title:recuperación AND title:información	2
+(title:información OR title:Google)	6
+casa AND (title:información OR title:Google)	0
+c*sa AND (title:información OR title:Google)	1
+title:agosto OR (summary:economía AND banco)	6
+title:agosto OR (summary:economía AND NOT banco)	9
+title:información AND summary:recuperación AND NOT section-name:precisión	1
+title:lengua	0
+title:lenguaje	15
