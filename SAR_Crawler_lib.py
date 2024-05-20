@@ -176,7 +176,7 @@ class SAR_Wiki_Crawler:
                 'summary')  # Si no esta vacio asigna el match del resumen con el resumen del diccionario
             secciones = partes.group(
                 'rest')  # Si no esta vacio asigna el match de rest con una var secciones que seguiremos desglosando
-            print("Dado el Texto:\n" + text + "\n")
+            # print("Dado el Texto:\n" + text + "\n")
 
             start_indices = []  # Creamos una lista de indices de inicio de secciones
             for coinc in self.sections_re.finditer(secciones):
@@ -214,7 +214,7 @@ class SAR_Wiki_Crawler:
                     seccion_dict['subsections'].append(subseccion_dict)
 
                 diccionario['sections'].append(seccion_dict)
-        print("Obtenemos el diccionario:")
+        # print("Obtenemos el diccionario:")
 
         return diccionario
 

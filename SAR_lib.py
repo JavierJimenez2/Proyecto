@@ -908,25 +908,37 @@ class SAR_Indexer:
         print("=" * 40)
         # Muestra más información sobre cada resultado si está habilitado
         number = 0
+
+        jsonFile = sorted(list(self.docs.keys()))
+        if len(jsonFile) <=1:
+            jsonFile = sorted(list(self.docs.values()))
+            if "\\" in jsonFile[0]:
+                jsonFile[0] = jsonFile[0].split('\\')[-1]
+            else:
+                jsonFile[0] = jsonFile[0].split('/')[1]
         for idx in display_results:
             art_id, article = self.articles.get(idx, {})
             number += 1
             # Obtener la ruta del primer elemento de self.docs.keys()
-            jsonFile = sorted(list(self.docs.keys()))
             # obtener el numero de elementos en el archivo json
+            docid=1
             if "\\" in jsonFile[0]:
                 depth = jsonFile[0].split('\\')[-2]
             else:
-                depth = jsonFile[0].split('/')[1]
+                if "/" in jsonFile[0]:
+                    depth = jsonFile[0].split('/')[1]
+                else:
+                    docid = 0
+                    depth = 0
             # get number of the string
             # how to know if contains a substring
-            if "/" in depth:
+            if docid==0:
+                depth=0
+            elif "/" in depth:
                 depth = int(depth.split('/')[-1])
+                docid = int((idx + 1) / depth)
             else:
                 depth = int(depth)
-            docslen = len(self.docs)
-            artlen = len(self.articles)
-            docid = int((idx + 1) / depth)
 
             # snippet=self.parse_article(open(jsonFile))
 

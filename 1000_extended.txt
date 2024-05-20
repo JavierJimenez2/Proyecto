@@ -19,14 +19,13 @@ PERMUTERMS:
 	# of permuterms in 'url': 132848
 ----------------------------------------
 STEMS:
-	# of stems in 'all': 166236
+	# of stems in 'all': 166175
 	# of stems in 'title': 2769
-	# of stems in 'summary': 23442
+	# of stems in 'summary': 23439
 	# of stems in 'section-name': 7092
 	# of stems in 'url': 2749
 ----------------------------------------
 Positional queries are allowed.
 ========================================
-Time indexing: 31.54s.
-Time saving: 6.38s.
-
+Time indexing: 30.15s.
+Time saving: 9.16s.
