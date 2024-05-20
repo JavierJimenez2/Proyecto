@@ -846,9 +846,8 @@ class SAR_Indexer:
                     print(query)
         return results
 
-    def solve_and_test(self, ql: List[str]) -> bool:
+    def solve_and_test(self, ql:List[str]) -> bool:
         errors = False
-        query = ''
         for line in ql:
             if len(line) > 0 and line[0] != '#':
                 query, ref = line.split('\t')
@@ -859,9 +858,10 @@ class SAR_Indexer:
                 else:
                     print(f'>>>>{query}\t{reference} != {result}<<<<')
                     errors = True
+
             else:
-                if len(query) > 0:
-                    print(query)
+                print(line)
+
         return not errors
 
     def solve_and_show(self, query: str):

@@ -108,29 +108,7 @@ summary:almacenamiento AND section-name:historia	26
 
 
 
-# POSITIONAL
 
-
-"recuperación de información"	53
-"búsqueda de información"	20
-"búsqueda y recuperación de información"	6
-base AND de AND datos	660
-"base de datos"	306
-"base de" AND "de datos"	409
-"base de" AND "de datos" AND NOT "base de datos"	103
-"casa de"	200
-"casa de papel"	6
-"documentos recuperados"	8
-"fin de semana"	47
-fin AND de AND semana	206
-fin AND de AND semana AND país	171
-"fin de semana"	47
-"fin de semana" AND país	35
-medalla AND de AND oro	126
-"medalla de oro"	86
-deporte AND "medalla de oro"	41
-"medalla de oro" AND NOT deporte	45
-"nada de nada"	0
 
 
 
@@ -163,30 +141,10 @@ bar*na OR val*cia OR pa*s	2228
 #
 
 cosa	183
-"cosa"	183
-"fin de semana"	47
-"el país"	553
-summary:"todo el mundo"	68
-summary:"todo el" AND summary:"el mundo"	71
-(NOT summary:"todo el mundo") AND (summary:"todo el" AND summary:"el mundo")	3
 summary:todo AND summary:el AND summary:mundo	103
-(NOT summary:"todo el mundo") AND (summary:todo AND summary:el AND summary:mundo)	35
-"fin de semana" AND summary:"el mundo"	8
-"fin de semana" AND (summary:el AND summary:mundo)	18
 title:búsqueda AND title:y AND title:recuperación AND title:información	2
-title:"recuperación de información"	2
-"fin de semana" AND (restaurantes OR hoteles)	10
-(title:información OR title:Google)	107
-casa AND (title:información OR title:Google)	6
-c*sa AND (title:información OR title:Google)	17
-title:agosto OR (summary:economía AND "banco")	57
 title:agosto OR (summary:economía AND banco)	57
 title:agosto OR (summary:economía AND NOT banco)	64
-title:agosto OR (summary:economía AND NOT "banco")	64
-"fin de semana" AND (title:python OR section-name:historia)	22
 title:información AND summary:recuperación AND NOT section-name:precisión	2
 title:lengua	1
 title:lenguaje	51
-title:informa AND summary:"sistemas de"	0
-title:información AND summary:"sistemas de"	8
-title:infor* AND summary:"sistemas de"	14
